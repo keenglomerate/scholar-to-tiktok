@@ -12,6 +12,7 @@ ENV/
 # Project temporary folder
 temp/
 temp-audio.m4a
+cache/
 
 # Rendered output files
 *.mp4

@@ -4,7 +4,7 @@ import sys
 import re
 import argparse
 import asyncio
-import xml.etree.ElementTree as ET
+import defusedxml.ElementTree as ET
 import requests
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
@@ -412,7 +412,7 @@ def preprocess_bg_video(input_path, duration, output_path="temp/cropped_bg.mp4")
         print(f"❌ FFmpeg pre-processing failed: {e}. Using original video.")
         return input_path
 
-def assemble_video(audio_path, srt_path, bg_image_path, paper_title, output_path, bg_video_path=None):
+def assemble_video(audio_path, srt_path, bg_image_path, paper_title, output_path, bg_video_path=None, temp_dir="temp"):
     print("🎬 Assembling video timeline with MoviePy...")
     
     # Load audio
@@ -429,7 +429,7 @@ def assemble_video(audio_path, srt_path, bg_image_path, paper_title, output_path
     # 1. Background clip (Satisfying gameplay/stock video OR static gradient zoom)
     if bg_video_path and os.path.exists(bg_video_path):
         print(f"🎬 Preparing background video: {bg_video_path}")
-        processed_bg = "temp/cropped_bg.mp4"
+        processed_bg = os.path.join(temp_dir, "cropped_bg.mp4")
         bg_video_path = preprocess_bg_video(bg_video_path, duration, processed_bg)
         bg_clip = VideoFileClip(bg_video_path)
     else:
@@ -546,12 +546,9 @@ def main():
     parser.add_argument("--output", default="tiktok_output.mp4", help="Name of the final output video file")
     args = parser.parse_args()
 
-    # Create workspace files inside working folder
-    os.makedirs("temp", exist_ok=True)
-    audio_path = "temp/voiceover.mp3"
-    srt_path = "temp/subtitles.srt"
-    bg_image = "temp/background.jpg"
-    downloaded_bg = "temp/downloaded_bg.mp4"
+    # Create cache folder inside working folder for persistent background video cache
+    os.makedirs("cache", exist_ok=True)
+    downloaded_bg = "cache/downloaded_bg.mp4"
     
     # Fetch paper details
     paper = fetch_arxiv_details(args.url)
@@ -590,25 +587,21 @@ def main():
     elif args.bg_video:
         bg_video_path = args.bg_video
 
-    # Generate assets
-    create_gradient_image(bg_image)
-    
-    # Run TTS async
-    asyncio.run(generate_voiceover(script, args.voice, audio_path, srt_path))
-    
-    # Assemble video
-    assemble_video(audio_path, srt_path, bg_image, paper["title"], args.output, bg_video_path=bg_video_path)
-    
-    # Clean up temp directory
-    try:
-        os.remove(audio_path)
-        os.remove(srt_path)
-        os.remove(bg_image)
-        if os.path.exists(downloaded_bg):
-            os.remove(downloaded_bg)
-        os.rmdir("temp")
-    except Exception:
-        pass
+    # Use context manager to guarantee automatic cleanup of temporary files even during crashes
+    import tempfile
+    with tempfile.TemporaryDirectory(dir=".", prefix="temp_") as temp_dir:
+        audio_path = os.path.join(temp_dir, "voiceover.mp3")
+        srt_path = os.path.join(temp_dir, "subtitles.srt")
+        bg_image = os.path.join(temp_dir, "background.jpg")
+
+        # Generate assets
+        create_gradient_image(bg_image)
+        
+        # Run TTS async
+        asyncio.run(generate_voiceover(script, args.voice, audio_path, srt_path))
+        
+        # Assemble video
+        assemble_video(audio_path, srt_path, bg_image, paper["title"], args.output, bg_video_path=bg_video_path, temp_dir=temp_dir)
         
     print(f"\n🎉 Successfully created video! You can find it at: {os.path.abspath(args.output)}")
 
