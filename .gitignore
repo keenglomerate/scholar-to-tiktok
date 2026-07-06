@@ -1,0 +1,23 @@
+# Python temporary files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Local virtual environment
+.venv/
+venv/
+ENV/
+
+# Project temporary folder
+temp/
+temp-audio.m4a
+
+# Rendered output files
+*.mp4
+*.m4v
+
+# IDE configurations
+.idea/
+.vscode/
+.DS_Store
