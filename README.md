@@ -2,6 +2,11 @@
 
 An automated short-form video generator designed to transform academic research papers into engaging, high-retention TikTok, YouTube Shorts, and Instagram Reels videos. The pipeline pulls paper details, synthesizes voiceovers, fetches high-quality background video clips (like Minecraft parkour), and renders everything together with synchronized captions.
 
+<p align="center">
+  <video src="tiktok_output.mp4" width="320" controls autoplay loop muted></video>
+</p>
+
+
 ---
 
 ## ✨ Features
