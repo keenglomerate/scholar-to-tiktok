@@ -171,7 +171,7 @@ def generate_default_script(title, summary):
 
 async def generate_voiceover(text, voice, audio_path, srt_path):
     print("🗣️ Generating synthesized voiceover via Microsoft Edge TTS...")
-    communicate = edge_tts.Communicate(text, voice)
+    communicate = edge_tts.Communicate(text, voice, boundary="WordBoundary")
     submaker = edge_tts.SubMaker()
     
     with open(audio_path, "wb") as fp:
